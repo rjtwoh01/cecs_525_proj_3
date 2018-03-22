@@ -5,6 +5,7 @@ import subprocess
 import time
 import serial
 import io
+import os
 import RPi.GPIO as GPIO
 
 class Temperature(object):
@@ -85,18 +86,18 @@ if __name__ == '__main__':
 ##        newTemperature = random.randint(60, 106)
 ##        temperature.setTemperature(newTemperature)
         
-        #if (newTemperature() >= 80):
-            #play music
-        
         x=ser.read(4)
         bytes=x.rstrip(b'\x00')
-        newTemperature=bytes.decode('utf-8')
+        newTemperature=int(bytes.decode('utf-8'))
 ##        root.update_idletasks()
 ##        root.update()
-        temperature.setTemperature(int(newTemperature))
+        temperature.setTemperature(newTemperature)
             
         root.update_idletasks()
         root.update()
+        
+        if (newTemperature >= 80):
+            os.system('aplay ./boing_x.wav')
         #print(type(y))
         #temperature.setTemperature(65)
 
