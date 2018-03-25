@@ -8,6 +8,7 @@ import io
 import os
 import dis
 import threading
+import config
 
 class Temperature(object):
 	def __init__(self):
@@ -31,13 +32,17 @@ class CriticalFrame(tk.Frame):
 	def createBox(self):
 		self.critTempLabel = tk.Label(self.master, font=('Arial', 25))
 		self.critTempLabel.pack(side = tk.LEFT)
-		self.critTempLabel['text'] = "Enter a Critical Temperature"
+		self.critTempLabel['text'] = "Enter a \nCritical Temperature"
 		self.critTempLabel['fg'] = 'black'
-		self.e1 = Entry(self.master)
-		self.e1.pack(side = tk.LEFT)
+		self.critTempBox = Entry(self.master)
+		self.critTempBox.pack(side = tk.LEFT)
+		self.btnCritTemp = Button(self.master, text = 'Enter', command = self.applyTemp)
+		self.btnCritTemp.pack(side = tk.LEFT)
 		
-	def apply(self):
-		self.critTemperature = self.e1.get()
+	def applyTemp(self):
+		self.critTemperature = self.critTempBox.get()
+		config.CRITICAL_TEMPERATURE = int(self.critTemperature)
+		print(config.CRITICAL_TEMPERATURE)
 
 	#def criticalTemp(self):
 		#temperature = Temperature()
@@ -63,7 +68,7 @@ class TemperatureFrame(tk.Frame):
 		self.celsius = float("{0:.2f}".format(self.celsius))
 		self.text = str(temperature) + self.degree_sign + 'F\n' + str(self.celsius) + self.degree_sign + 'C'
 		self.temperatureLabel['text'] = format(self.text)
-		if (temperature >= 80):
+		if (temperature >= config.CRITICAL_TEMPERATURE):
 			self.temperatureLabel['fg'] = 'red'
 		elif (temperature >= 60):
 			self.temperatureLabel['fg'] = 'green'
@@ -83,11 +88,33 @@ class ThermometerFrame(tk.Frame):
 
 	def drawMercury(self, temperature):
 		self.canvas.delete('line')
-		self.critTemp = 80
+		self.critTemp = config.CRITICAL_TEMPERATURE
 		self.drawHeight = 530 - temperature * 4
 		if (self.drawHeight <= 80):
 			self.drawHeight = 80
 		self.canvas.create_line(100, 530, 100, self.drawHeight, width = 35, fill = 'red', tag = 'line')
+
+class Pause(tk.Frame):
+	def __init__(self, master=None):
+		super().__init__(master)
+		self.createButton()
+		self.applicationState = config.APPLICATION_STATE
+		
+	def createButton(self):
+		self.btnPause = Button(self.master, text = 'PAUSE', command = self.pause)
+		self.btnPause.pack(side = tk.LEFT)
+		
+	def pause(self):
+		if (self.applicationState == 'running'):
+			self.applicationState = 'paused'
+		elif (self.applicationState == 'paused'):
+			self.applicationState = 'running'
+			
+		config.APPLICATION_STATE = self.applicationState
+		print(config.APPLICATION_STATE)
+	
+	def getApplicationState(self):
+		return self.applicationState
 
 class Application(tk.Frame):
 	def __init__(self, temperature, master = None):
@@ -101,7 +128,9 @@ class Application(tk.Frame):
 		self.temperatureFrame = TemperatureFrame(temperature, self)
 		self.temperatureFrame.pack(side = tk.LEFT)		
 		self.critFrame = CriticalFrame(self)
-		self.critFrame.pack(side = tk.LEFT)
+		self.critFrame.pack(side = tk.LEFT)	
+		self.pauseButton = Pause(self)
+		self.pauseButton.pack(side = tk.LEFT)
 		
 class Threads(threading.Thread):
 	def __init__(self, threadID, threadType, temperature, newTemperature, window):
@@ -111,11 +140,11 @@ class Threads(threading.Thread):
 		self.temperature = temperature
 		self.newTemperature = newTemperature
 		self.window = window
-		time.sleep(5)
+		time.sleep(1)
+		
 	def run(self):
 		if (self.threadType == 'temperature'):
 			self.newTemperature = random.uniform(30, 106)
-			
 		elif (self.threadType == 'gui'):
 			self.window.update_idletasks()
 			self.window.update()
@@ -129,16 +158,18 @@ if __name__ == '__main__':
 	window.geometry('1200x600')
 	temperature = Temperature()
 	app = Application(temperature, master = window)
-	newTemperature = 0
+	newTemperature = 0	
 
 	while True:
-		temperatureThread = Threads(1, 'temperature', temperature, newTemperature, window)
-		temperatureThread.daemon = True
-		temperatureThread.start()
-		newTemperature = temperatureThread.getTemp()
-		#temperatureThread._stop() #undocumented way to stop a thread
-		#newTemperature = random.uniform(30, 106)
-		temperature.setTemperature(int(newTemperature))
+		if (config.APPLICATION_STATE == 'running'):
+			temperatureThread = Threads(1, 'temperature', temperature, newTemperature, window)
+			temperatureThread.daemon = True #this allows the thread to get killed after it runs
+			temperatureThread.start()
+			newTemperature = temperatureThread.getTemp()
+			#temperatureThread._stop() #undocumented way to stop a thread
+			#newTemperature = random.uniform(30, 106)
+			temperature.setTemperature(int(newTemperature))
+			print(config.CRITICAL_TEMPERATURE)
 		
 		#guiThread = Threads(1, 'gui', temperature, newTemperature, window)  
 		window.update_idletasks()
