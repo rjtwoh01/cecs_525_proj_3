@@ -7,6 +7,7 @@ import time
 import io
 import os
 import dis
+import threading
 
 class Temperature(object):
 	def __init__(self):
@@ -22,20 +23,29 @@ class Temperature(object):
 		self.obeservers.append(callback)
 
 class CriticalFrame(tk.Frame):
-	def __init__(self, temperature, master=None):
+	def __init__(self, master=None):
 		super().__init__(master)
-		tempearture.bind(self.criticalTemp())
+		self.createBox()
+		#tempearture.bind(self.criticalTemp())
+		
+	def createBox(self):
+		self.critTempLabel = tk.Label(self.master, font=('Arial', 25))
+		self.critTempLabel.pack(side = tk.LEFT)
+		self.critTempLabel['text'] = "Enter a Critical Temperature"
+		self.critTempLabel['fg'] = 'black'
+		self.e1 = Entry(self.master)
+		self.e1.pack(side = tk.LEFT)
+		
+	def apply(self):
+		self.critTemperature = self.e1.get()
 
-	def criticalTemp(self):
-		temperature = Temperature()
+	#def criticalTemp(self):
+		#temperature = Temperature()
 
-		e = Entry(self)
-		e.pack(side='top', anchor='n')
-		b = Button(root, text='Set Critical Temperature', command=app)
-		b.pack(side='top', fill="y", expand=True)
-
-	def set_callback(self, a_func):
-		self.callback = a_func
+		#e = Entry(self)
+		#e.pack(side='top', anchor='n')
+		#b = Button(root, text='Set Critical Temperature', command=app)
+		#b.pack(side='top', fill="y", expand=True)
 
 class TemperatureFrame(tk.Frame):
 	def __init__(self, tempearture, master=None):
@@ -45,8 +55,8 @@ class TemperatureFrame(tk.Frame):
 		self.degree_sign= u'\N{DEGREE SIGN}'
 
 	def createText(self):
-		self.temperatureLabel = tk.Label(self.master, font=('Arial', 100))
-		self.temperatureLabel.pack(side = tk.RIGHT)
+		self.temperatureLabel = tk.Label(self.master, font=('Arial', 50))
+		self.temperatureLabel.pack(side = tk.LEFT)
 
 	def updateTemperature(self, temperature):
 		self.celsius = (temperature - 32) * (5/9)
@@ -63,12 +73,12 @@ class TemperatureFrame(tk.Frame):
 class ThermometerFrame(tk.Frame):
 	def __init__(self, temperature, master=None):
 		super().__init__(master)
-		self.canvas = tk.Canvas(self, width = 1200, height = 800)
+		self.canvas = tk.Canvas(self, width = 200, height = 800)
 		self.canvas.pack(side = tk.LEFT)
 
 		self.photo = tk.PhotoImage(file = '/home/ryan/thermometer.gif')
-		self.canvas.create_image(200, 300, image = self.photo)
-		self.canvas.create_oval(200 - 42, 530 - 42, 200 + 42, 530 + 42, fill = 'red')
+		self.canvas.create_image(100, 300, image = self.photo)
+		self.canvas.create_oval(100 - 42, 530 - 42, 100 + 42, 530 + 42, fill = 'red')
 		temperature.bind(self.drawMercury)
 
 	def drawMercury(self, temperature):
@@ -77,7 +87,7 @@ class ThermometerFrame(tk.Frame):
 		self.drawHeight = 530 - temperature * 4
 		if (self.drawHeight <= 80):
 			self.drawHeight = 80
-		self.canvas.create_line(200, 530, 200, self.drawHeight, width = 35, fill = 'red', tag = 'line')
+		self.canvas.create_line(100, 530, 100, self.drawHeight, width = 35, fill = 'red', tag = 'line')
 
 class Application(tk.Frame):
 	def __init__(self, temperature, master = None):
@@ -86,10 +96,32 @@ class Application(tk.Frame):
 		self.initFrames(temperature)
 
 	def initFrames(self, temperature):
-		self.temperatureFrame = TemperatureFrame(temperature, self)
-		self.temperatureFrame.pack(side = tk.RIGHT)
 		self.thermometerFrame = ThermometerFrame(temperature, self)
 		self.thermometerFrame.pack(side = tk.LEFT)
+		self.temperatureFrame = TemperatureFrame(temperature, self)
+		self.temperatureFrame.pack(side = tk.LEFT)		
+		self.critFrame = CriticalFrame(self)
+		self.critFrame.pack(side = tk.LEFT)
+		
+class Threads(threading.Thread):
+	def __init__(self, threadID, threadType, temperature, newTemperature, window):
+		threading.Thread.__init__(self)
+		self.threadID = threadID
+		self.threadType = threadType
+		self.temperature = temperature
+		self.newTemperature = newTemperature
+		self.window = window
+		time.sleep(5)
+	def run(self):
+		if (self.threadType == 'temperature'):
+			self.newTemperature = random.uniform(30, 106)
+			
+		elif (self.threadType == 'gui'):
+			self.window.update_idletasks()
+			self.window.update()
+			
+	def getTemp(self):
+		return self.newTemperature
 
 if __name__ == '__main__':
 	window = tk.Tk()
@@ -97,11 +129,22 @@ if __name__ == '__main__':
 	window.geometry('1200x600')
 	temperature = Temperature()
 	app = Application(temperature, master = window)
+	newTemperature = 0
 
 	while True:
-		newTemperature = random.uniform(30, 106)
-		temperature.setTemperature(int(newTemperature))     
+		temperatureThread = Threads(1, 'temperature', temperature, newTemperature, window)
+		temperatureThread.daemon = True
+		temperatureThread.start()
+		newTemperature = temperatureThread.getTemp()
+		#temperatureThread._stop() #undocumented way to stop a thread
+		#newTemperature = random.uniform(30, 106)
+		temperature.setTemperature(int(newTemperature))
+		
+		#guiThread = Threads(1, 'gui', temperature, newTemperature, window)  
 		window.update_idletasks()
 		window.update()
+		
+		
+		#guiThread.start()
 
-		time.sleep(5) #5 second delay
+		#time.sleep(5) #5 second delay
