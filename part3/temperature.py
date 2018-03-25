@@ -1,11 +1,12 @@
 import random
 import tkinter as tk
+from tkinter import Tk, Entry, Button, INSERT, Text
+from tkinter.ttk import *
 import subprocess
 import time
-import serial
 import io
 import os
-#import RPi.GPIO as GPIO
+import dis
 
 class Temperature(object):
 	def __init__(self):
@@ -20,23 +21,38 @@ class Temperature(object):
 	def bind(self, callback):
 		self.obeservers.append(callback)
 
+class CriticalFrame(tk.Frame):
+	def __init__(self, temperature, master=None):
+		super().__init__(master)
+		tempearture.bind(self.criticalTemp())
+
+	def criticalTemp(self):
+		temperature = Temperature()
+
+		e = Entry(self)
+		e.pack(side='top', anchor='n')
+		b = Button(root, text='Set Critical Temperature', command=app)
+		b.pack(side='top', fill="y", expand=True)
+
+	def set_callback(self, a_func):
+		self.callback = a_func
+
 class TemperatureFrame(tk.Frame):
 	def __init__(self, tempearture, master=None):
 		super().__init__(master)
 		self.createText()
 		tempearture.bind(self.updateTemperature)
+		self.degree_sign= u'\N{DEGREE SIGN}'
 
 	def createText(self):
-		self.temperatureLabel = tk.Label(self.master, text=u'0\u2109', font=('Arial', 100))
+		self.temperatureLabel = tk.Label(self.master, font=('Arial', 100))
 		self.temperatureLabel.pack(side = tk.RIGHT)
-#		self.celsiusLabel.tk = tk.Label(self.master, text=u'0\u2109', font=('Arial', 100))
-#		self.celsiusLabel.pack(side = tk.RIGHT)
 
 	def updateTemperature(self, temperature):
 		self.celsius = (temperature - 32) * (5/9)
 		self.celsius = float("{0:.2f}".format(self.celsius))
-		self.text = str(temperature) + '\n' + str(self.celsius)
-		self.temperatureLabel['text'] = u'{}\u2109'.format(self.text)
+		self.text = str(temperature) + self.degree_sign + 'F\n' + str(self.celsius) + self.degree_sign + 'C'
+		self.temperatureLabel['text'] = format(self.text)
 		if (temperature >= 80):
 			self.temperatureLabel['fg'] = 'red'
 		elif (temperature >= 60):
@@ -44,15 +60,6 @@ class TemperatureFrame(tk.Frame):
 		else:
 			self.temperatureLabel['fg'] = 'blue'
 			
-#		self.celsius = (temperature - 32) * (5/9)
-#		self.celsiusLabel['text'] = u'{}\u2109'.format(self.celsius)
-#		if (temperature >= 80):
-#			self.celsiusLabel['fg'] = 'red'
-#		elif (temperature >= 60):
-#			self.celsiusLabel['fg'] = 'green'
-#		else:
-#			self.celsiusLabel['fg'] = 'blue'
-
 class ThermometerFrame(tk.Frame):
 	def __init__(self, temperature, master=None):
 		super().__init__(master)
@@ -66,6 +73,7 @@ class ThermometerFrame(tk.Frame):
 
 	def drawMercury(self, temperature):
 		self.canvas.delete('line')
+		self.critTemp = 80
 		self.drawHeight = 530 - temperature * 4
 		if (self.drawHeight <= 80):
 			self.drawHeight = 80
@@ -89,24 +97,11 @@ if __name__ == '__main__':
 	window.geometry('1200x600')
 	temperature = Temperature()
 	app = Application(temperature, master = window)
-#    ser=serial.Serial('/dev/ttyAMA0')
 
 	while True:
-##        newTemperature = random.randint(60, 106)
-##        temperature.setTemperature(newTemperature)
-        
-#        x=ser.read(4)
-#        bytes=x.rstrip(b'\x00')
-#        newTemperature=int(bytes.decode('utf-8'))
-		newTemperature = random.uniform(55, 106)
-		temperature.setTemperature(int(newTemperature))
-            
+		newTemperature = random.uniform(30, 106)
+		temperature.setTemperature(int(newTemperature))     
 		window.update_idletasks()
 		window.update()
-		
-        
-        #if (newTemperature >= 80):
-            #os.system('aplay ./boing_x.wav')
-        #print(type(y))
-        #temperature.setTemperature(65)
+
 		time.sleep(5) #5 second delay
