@@ -165,11 +165,12 @@ class Threads(threading.Thread):
 		self.temperature = temperature
 		self.newTemperature = newTemperature
 		self.window = window
-		time.sleep(1)
+		time.sleep(.1)
 		
 	def run(self):
 		if (self.threadType == 'temperature'):
 			x = ser.read(4)
+			bytes=x.rstrip(b'\x00')
 			self.newTemperature = int(bytes.decode('utf-8'))
 		elif (self.threadType == 'gui'):
 			self.window.update_idletasks()
@@ -190,10 +191,14 @@ if __name__ == '__main__':
 
 	while True:
 		if (config.APPLICATION_STATE == 'running'):
-			temperatureThread = Threads(1, 'temperature', temperature, newTemperature, window, ser)
-			temperatureThread.daemon = True #this allows the thread to get killed after it runs
-			temperatureThread.start()
-			newTemperature = temperatureThread.getTemp()
+			#temperatureThread = Threads(1, 'temperature', temperature, newTemperature, window, ser)
+			#temperatureThread.daemon = True #this allows the thread to get killed after it runs
+			#temperatureThread.start()
+			#newTemperature = temperatureThread.getTemp()
+                    
+			x = ser.read(4)
+			bytes=x.rstrip(b'\x00')
+			newTemperature = int(bytes.decode('utf-8'))
 			
 			if (newTemperature >= config.CRITICAL_TEMPERATURE):
 				os.system('aplay ./boing_x.wav')
