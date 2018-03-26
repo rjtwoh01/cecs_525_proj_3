@@ -193,12 +193,7 @@ if __name__ == '__main__':
 			
 			if (newTemperature >= config.CRITICAL_TEMPERATURE):
 				window.configure(background = 'black')
-				time.sleep(.5)				
-				window.update_idletasks()
-				window.update()
-				window.configure(background = defaultBackgroundColor)
-				window.update_idletasks()
-				window.update()
+				time.sleep(.05)
 			
 			#temperatureThread._stop() #undocumented way to stop a thread
 			#newTemperature = random.uniform(30, 106)
@@ -210,6 +205,10 @@ if __name__ == '__main__':
 		window.update_idletasks()
 		window.update()
 		
+		time.sleep(.05)
+		
+		window.configure(background = defaultBackgroundColor)  
+		window.update()
 		
 		#guiThread.start()
 
