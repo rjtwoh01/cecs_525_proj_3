@@ -10,6 +10,7 @@ import dis
 import threading
 import config
 import RPi.GPIO as GPIO
+import serial
 
 class Temperature(object):
 	def __init__(self):
@@ -169,7 +170,7 @@ class Threads(threading.Thread):
 	def run(self):
 		if (self.threadType == 'temperature'):
 			x = ser.read(4)
-			self.newTemperature = int(bytes.decode('utf-8')
+			self.newTemperature = int(bytes.decode('utf-8'))
 		elif (self.threadType == 'gui'):
 			self.window.update_idletasks()
 			self.window.update()
