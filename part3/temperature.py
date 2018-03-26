@@ -58,6 +58,7 @@ class TemperatureFrame(tk.Frame):
 		self.createText()
 		tempearture.bind(self.updateTemperature)
 		self.degree_sign= u'\N{DEGREE SIGN}'
+		self.flashCounter = 0
 
 	def createText(self):
 		self.temperatureLabel = tk.Label(self.master, font=('Arial', 50))
@@ -70,11 +71,30 @@ class TemperatureFrame(tk.Frame):
 		self.temperatureLabel['text'] = format(self.text)
 		if (temperature >= config.CRITICAL_TEMPERATURE):
 			self.temperatureLabel['fg'] = 'red'
+			#self.flash()
+			#print("After flash")
 		elif (temperature >= 60):
 			self.temperatureLabel['fg'] = 'green'
 		else:
 			self.temperatureLabel['fg'] = 'blue'
 			
+	def flash(self):
+		print("In flash")
+		#self.temperatureLabel['fg'] = 'red'
+		#time.sleep(0.5)
+		#self.temperatureLabel['fg'] = 'black'
+		#time.sleep(0.5)
+		#self.temperatureLabel['fg'] = 'red'
+		if (self.flashCounter == 0):
+			self.temperatureLabel.config(fg = 'red')
+			self.after(500, self.flash)
+		elif(self.flashCounter == 1):
+			self.temperatureLabel.config(fg = 'black')
+			self.after(500, self.flash)
+		else:
+			self.flashCounter = 0
+		
+						
 class ThermometerFrame(tk.Frame):
 	def __init__(self, temperature, master=None):
 		super().__init__(master)
@@ -132,6 +152,9 @@ class Application(tk.Frame):
 		self.pauseButton = Pause(self)
 		self.pauseButton.pack(side = tk.LEFT)
 		
+	def windowFlash(self, temperature):
+		self.master.configure(background = 'black')
+		
 class Threads(threading.Thread):
 	def __init__(self, threadID, threadType, temperature, newTemperature, window):
 		threading.Thread.__init__(self)
@@ -158,7 +181,8 @@ if __name__ == '__main__':
 	window.geometry('1200x600')
 	temperature = Temperature()
 	app = Application(temperature, master = window)
-	newTemperature = 0	
+	newTemperature = 0
+	defaultBackgroundColor = window.cget('bg')
 
 	while True:
 		if (config.APPLICATION_STATE == 'running'):
@@ -166,11 +190,22 @@ if __name__ == '__main__':
 			temperatureThread.daemon = True #this allows the thread to get killed after it runs
 			temperatureThread.start()
 			newTemperature = temperatureThread.getTemp()
+			
+			if (newTemperature >= config.CRITICAL_TEMPERATURE):
+				window.configure(background = 'black')
+				time.sleep(.5)				
+				window.update_idletasks()
+				window.update()
+				window.configure(background = defaultBackgroundColor)
+				window.update_idletasks()
+				window.update()
+			
 			#temperatureThread._stop() #undocumented way to stop a thread
 			#newTemperature = random.uniform(30, 106)
 			temperature.setTemperature(int(newTemperature))
-			print(config.CRITICAL_TEMPERATURE)
-		
+			#print(config.CRITICAL_TEMPERATURE)
+			
+						
 		#guiThread = Threads(1, 'gui', temperature, newTemperature, window)  
 		window.update_idletasks()
 		window.update()
