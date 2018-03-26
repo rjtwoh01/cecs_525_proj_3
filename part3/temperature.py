@@ -61,6 +61,13 @@ class ThermometerFrame(tk.Frame):
         if (self.drawHeight <= 80):
             self.drawHeight = 80
         self.canvas.create_line(200, 530, 200, self.drawHeight, width = 35, fill = 'red', tag = 'line')
+        
+##class CritTempFrame(tk.Frame):
+##    def __init__(self, temperature, master=None):
+##        super().__init__(master)
+##        self.Entry
+        
+        
 
 class Application(tk.Frame):
     def __init__(self, temperature, master = None):
@@ -80,6 +87,8 @@ if __name__ == '__main__':
     root.geometry('800x600')
     temperature = Temperature()
     app = Application(temperature, master = root)
+    textBox = tk.Entry(master = root)
+    textBox.pack(tk.LEFT)
     ser=serial.Serial('/dev/ttyAMA0')
 
     while True:
