@@ -45,6 +45,8 @@ class CriticalFrame(tk.Frame):
 		self.critTemperature = self.critTempBox.get()
 		config.CRITICAL_TEMPERATURE = int(self.critTemperature)
 		print(config.CRITICAL_TEMPERATURE)
+		ser=serial.Serial('/dev/ttyAMA0')
+		ser.write(config.CRITICAL_TEMPERATURE.to_bytes(2, byteorder='big'))
 
 	#def criticalTemp(self):
 		#temperature = Temperature()
