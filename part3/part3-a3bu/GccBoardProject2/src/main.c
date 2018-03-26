@@ -12,27 +12,24 @@ int last_temperaturec;
 int last_temperaturef;
 #define OUTPUT_STR_SIZE        32
 char out_str[OUTPUT_STR_SIZE];
+int critical;
+
 static void adc_handler(ADC_t *adc, uint8_t ch_mask, adc_result_t result)
 {
-	
-	
 	#ifdef CONF_BOARD_OLED_UG_2832HSWEG04
 	gfx_mono_draw_filled_rect(0,0,128,32,GFX_PIXEL_CLR);
 	#endif
 	int32_t temperature;
 	char tx_buf[4] = {0, 0,0,0};
-	char rbyte[4]={0,0,0,0};
 	uint8_t tx_length = 4;
 	uint8_t i;
+	int x;
 	
 	struct pwm_config mypwm[1]; //For your PWM configuration –CKH
 	pwm_init(&mypwm[0], PWM_TCC0, PWM_CH_A, 1000);
-	int x;
 	
-	//for (i=0;i<tx_length;i++)
-	//{
-	//rbyte[i]=usart_getchar(COMM);
-	//}
+	
+
 	
 	if (result > 697) {
 		temperature = (int8_t)((-0.0295 * result) + 40.5);
@@ -49,9 +46,9 @@ static void adc_handler(ADC_t *adc, uint8_t ch_mask, adc_result_t result)
 	
 	
 
-	if(last_temperaturef>=z)
+	if(last_temperaturef>critical)
 	{
-		x=last_temperaturef/2;
+		x=100;
 		pwm_start(&mypwm[0], x);
 	}
 	else
@@ -86,7 +83,6 @@ static void adc_handler(ADC_t *adc, uint8_t ch_mask, adc_result_t result)
 	
 }
 
-uint8_t received_byte;
 
 int main(void)
 {
@@ -157,12 +153,18 @@ int main(void)
 
 	
 	do {		
-		
+		//uint8_t tx_length = 4;
+		//uint8_t i;
 		
 		if (usart_rx_is_complete(COMM) == true)
-		{	
-			received_byte=usart_getchar(COMM);
-			snprintf(out_str, OUTPUT_STR_SIZE, "Critical Temp: %c ", received_byte);
+		{	//for (i = 0; i < tx_length; i++) 
+			//{
+			uint8_t received_byte = usart_getchar(COMM);
+			critical=(int)received_byte;
+			
+			//}
+			
+			snprintf(out_str, OUTPUT_STR_SIZE, "Critical Temp: %d ", received_byte);
 			gfx_mono_draw_string(out_str, 0, 20, &sysfont);
 		}
 		
