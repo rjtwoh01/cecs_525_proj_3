@@ -4,11 +4,14 @@
 #include <stdio.h>
 #include <comm.h>
 #include <stdlib.h>
+#include <ctype.h>
 
+
+int z;
 int last_temperaturec;
 int last_temperaturef;
 #define OUTPUT_STR_SIZE        32
-
+char out_str[OUTPUT_STR_SIZE];
 static void adc_handler(ADC_t *adc, uint8_t ch_mask, adc_result_t result)
 {
 	
@@ -17,13 +20,20 @@ static void adc_handler(ADC_t *adc, uint8_t ch_mask, adc_result_t result)
 	gfx_mono_draw_filled_rect(0,0,128,32,GFX_PIXEL_CLR);
 	#endif
 	int32_t temperature;
-	char out_str[OUTPUT_STR_SIZE];
+	char tx_buf[4] = {0, 0,0,0};
+	char rbyte[4]={0,0,0,0};
+	uint8_t tx_length = 4;
+	uint8_t i;
+	
 	struct pwm_config mypwm[1]; //For your PWM configuration –CKH
-	pwm_init(&mypwm[0], PWM_TCC0, PWM_CH_A, 500);
+	pwm_init(&mypwm[0], PWM_TCC0, PWM_CH_A, 1000);
 	int x;
 	
+	//for (i=0;i<tx_length;i++)
+	//{
+	//rbyte[i]=usart_getchar(COMM);
+	//}
 	
-
 	if (result > 697) {
 		temperature = (int8_t)((-0.0295 * result) + 40.5);
 	} if (result > 420) {
@@ -34,10 +44,12 @@ static void adc_handler(ADC_t *adc, uint8_t ch_mask, adc_result_t result)
 
 	last_temperaturec = temperature;
 	last_temperaturef = (temperature*1.8)+32;
-
-	// usart_putchar(COMM,last_temperaturef);
 	
-	if(last_temperaturef>80)
+	
+	
+	
+
+	if(last_temperaturef>=z)
 	{
 		x=last_temperaturef/2;
 		pwm_start(&mypwm[0], x);
@@ -46,29 +58,35 @@ static void adc_handler(ADC_t *adc, uint8_t ch_mask, adc_result_t result)
 	{
 		pwm_start(&mypwm[0], 0);
 	}
+	
+	sprintf(tx_buf, "%d", last_temperaturef);
+	for (i = 0; i < tx_length; i++) {
+		usart_putchar(COMM, tx_buf[i]);
+		
+	}
+	for (i = 0; i < tx_length; i++) {
+		tx_buf[i]=0;
+		
+		
+	}
+	
+	
+	
 
+		
 	// Write temperature to display
 	snprintf(out_str, OUTPUT_STR_SIZE, "Temperature: %4d C", last_temperaturec);
 	gfx_mono_draw_string(out_str, 0, 0, &sysfont);
 	
 	snprintf(out_str, OUTPUT_STR_SIZE, "Temperature: %4d F", last_temperaturef);
 	gfx_mono_draw_string(out_str, 0, 10, &sysfont);
-	snprintf(out_str, OUTPUT_STR_SIZE, "Duty Cycle: %4d ", x);
-	gfx_mono_draw_string(out_str, 0, 20, &sysfont);
 	
-	char tx_buf[4] = {0, 0,0,0};
-	uint8_t tx_length = 4;
-	uint8_t i;
-	sprintf(tx_buf, "%d", last_temperaturef);
+
 	
-	// Send "message header"
-	for (i = 0; i < tx_length; i++) {
-		usart_putchar(COMM, tx_buf[i]);
-	}
 	
-	// Start next conversion.
-	adc_start_conversion(adc, ch_mask);
 }
+
+uint8_t received_byte;
 
 int main(void)
 {
@@ -79,7 +97,7 @@ int main(void)
 
 	board_init();
 	sysclk_init();
-	sleepmgr_init();
+	//sleepmgr_init();
 	irq_initialize_vectors();
 	cpu_irq_enable();
 	gfx_mono_init();
@@ -88,7 +106,7 @@ int main(void)
 		.baudrate = 9600,
 		.charlength = (0x03<<0),
 		.paritytype = (0x00<<4),
-		.stopbits = false
+		.stopbits = true
 	};
 	usart_init_rs232(COMM, &USART_SERIAL_OPTIONS);
 	
@@ -138,15 +156,24 @@ int main(void)
 	
 
 	
-	do {
-		// Sleep until ADC interrupt triggers.
+	do {		
+		
+		
+		if (usart_rx_is_complete(COMM) == true)
+		{	
+			received_byte=usart_getchar(COMM);
+			snprintf(out_str, OUTPUT_STR_SIZE, "Critical Temp: %c ", received_byte);
+			gfx_mono_draw_string(out_str, 0, 20, &sysfont);
+		}
 		
 		
 		
-	   
-	   
-		
-		
+		adc_start_conversion(&ADCA, ADC_CH0);
+
+		/*received_byte=usart_getchar(COMM);
+		snprintf(out_str, OUTPUT_STR_SIZE, "Critical Temp: %4d ", received_byte);
+		gfx_mono_draw_string(out_str, 0, 20, &sysfont);
+		usart_putchar(COMM,received_byte);*/
 	} while (1);
 	
 }
